@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Uber Tracker</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; text-align: center; margin-top: 20px; background-color: #f4f4f4; }
+        .container { max-width: 400px; margin: auto; padding: 15px; }
+        h1 { color: #333; }
+        button {
+            display: block;
+            width: 100%;
+            padding: 20px;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            transition: transform 0.1s;
+        }
+        button:active {
+            transform: scale(0.98); /* Visual feedback on tap */
+        }
+        input { 
+            width: 95%; 
+            padding: 12px; 
+            margin-bottom: 20px; 
+            font-size: 1.1em; 
+            border: 1px solid #ccc; 
+            border-radius: 8px; 
+        }
+        #message { 
+            margin-top: 20px; 
+            font-weight: bold; 
+            min-height: 20px; 
+            color: #333;
+        }
+        .btn-looking { background-color: #007BFF; }
+        .btn-pickup { background-color: #FFC107; color: black; }
+        .btn-waiting { background-color: #FD7E14; }
+        .btn-completed { background-color: #28A745; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Uber Ride Tracker</h1>
+        <label for="rideId">Daily Ride ID:</label>
+        <input type="text" id="rideId" placeholder="e.g., Aug-27-2025">
+
+        <button class="btn-looking" onclick="logData('T0: Looking for rides')">Looking for Rides</button>
+        <button class="btn-pickup" onclick="logData('T1: Driving to pickup')">Accepted Ride</button>
+        <button class="btn-waiting" onclick="logData('T2: Waiting for passenger')">Waiting for Passenger</button>
+        <button class="btn-completed" onclick="logData('T3: Ride completed')">Ride Completed</button>
+
+        <p id="message"></p>
+    </div>
+
+    <script>
+        // VITAL STEP: Replace the text below with the Web App URL you copied from Google.
+        const webAppUrl = "PASTE_YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE";
+
+        function logData(status) {
+            // 1. Capture the exact time of the click, immediately.
+            const clickTimestamp = new Date().toISOString();
+
+            const rideId = document.getElementById('rideId').value;
+            if (!rideId) {
+                alert("Please enter a Daily Ride ID first.");
+                return;
+            }
+
+            let upfrontFare = "";
+            let realizedFare = "";
+
+            // 2. Ask for fare info if needed. The timestamp is already saved.
+            if (status === 'T1: Driving to pickup') {
+                const fareInput = prompt("Enter Upfront Fare:", "");
+                if (fareInput === null) return; // User clicked "Cancel"
+                upfrontFare = fareInput;
+            }
+
+            if (status === 'T3: Ride completed') {
+                const fareInput = prompt("Enter Realized Fare:", "");
+                if (fareInput === null) return; // User clicked "Cancel"
+                realizedFare = fareInput;
+            }
+
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = "Getting location...";
+
+            // 3. Get GPS coordinates.
+            navigator.geolocation.getCurrentPosition(position => {
+                const { latitude, longitude } = position.coords;
+                messageDiv.textContent = "Location found. Fetching address...";
+
+                // --- REVERSE GEOCODING ADDED HERE ---
+                // This new section takes the coordinates and fetches the address.
+                const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`;
+                
+                fetch(nominatimUrl)
+                    .then(res => res.json())
+                    .then(geoData => {
+                        const address = geoData.display_name || "Address not found";
+                        // Now that we have the address, proceed to send all data.
+                        sendDataToSheet(address, latitude, longitude);
+                    })
+                    .catch(error => {
+                        console.error("Error fetching address:", error);
+                        // If address lookup fails, still send the data but with an error message.
+                        sendDataToSheet("Address lookup failed", latitude, longitude);
+                    });
+                // --- END OF REVERSE GEOCODING SECTION ---
+
+            }, error => {
+                messageDiv.textContent = `Error: Could not get location.`;
+            });
+
+            // This function now handles the final step of sending data to Google.
+            function sendDataToSheet(address, latitude, longitude) {
+                messageDiv.textContent = "Address captured. Sending data...";
+
+                const data = {
+                    timestamp: clickTimestamp,
+                    rideId,
+                    status,
+                    latitude,
+                    longitude,
+                    address: address, // Use the fetched address
+                    upfrontFare,
+                    realizedFare
+                };
+
+                fetch(webAppUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    cache: 'no-cache',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                })
+                .then(() => {
+                    messageDiv.textContent = `Success: ${status} logged.`;
+                    setTimeout(() => { messageDiv.textContent = "" }, 3000);
+                })
+                .catch(error => {
+                    messageDiv.textContent = `Error: Data not sent.`;
+                });
+            }
+        }
+    </script>
+</body>
+</html>
