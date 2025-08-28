@@ -24,18 +24,18 @@
         button:active {
             transform: scale(0.98); /* Visual feedback on tap */
         }
-        input { 
-            width: 95%; 
-            padding: 12px; 
-            margin-bottom: 20px; 
-            font-size: 1.1em; 
-            border: 1px solid #ccc; 
-            border-radius: 8px; 
+        input {
+            width: 95%;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            border: 1px solid #ccc;
+            border-radius: 8px;
         }
-        #message { 
-            margin-top: 20px; 
-            font-weight: bold; 
-            min-height: 20px; 
+        #message {
+            margin-top: 20px;
+            font-weight: bold;
+            min-height: 20px;
             color: #333;
         }
         .btn-looking { background-color: #007BFF; }
@@ -60,7 +60,7 @@
 
     <script>
         // VITAL STEP: Replace the text below with the Web App URL you copied from Google.
-        const webAppUrl = "PASTE_YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE";
+        const webAppUrl = "https://script.google.com/macros/s/AKfycbzyqmgCI6oby4Ti3p04-Ar2qAjtwwbORa47OE9uI9oFDZ9jbL0DgFED9d_sWCSA1Zz2/exec";
 
         function logData(status) {
             // 1. Capture the exact time of the click, immediately.
@@ -99,7 +99,7 @@
                 // --- REVERSE GEOCODING ADDED HERE ---
                 // This new section takes the coordinates and fetches the address.
                 const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`;
-                
+
                 fetch(nominatimUrl)
                     .then(res => res.json())
                     .then(geoData => {
